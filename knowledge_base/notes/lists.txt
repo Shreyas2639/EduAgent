@@ -1,0 +1,27 @@
+LISTS - Study Notes
+
+WHAT IS A LIST?
+A list is an ordered collection of items.
+
+EXAMPLE
+  my_list = [1, 2, 3]
+
+ACCESS
+  my_list[0] → 1
+
+MODIFY
+  my_list.append(4)
+
+LOOP THROUGH LIST
+  for item in my_list:
+      print(item)
+
+SLICING
+  my_list[1:3]
+
+COMMON MISTAKES
+- index out of range
+- modifying while iterating
+
+WHEN TO USE
+Use lists to store multiple related values.

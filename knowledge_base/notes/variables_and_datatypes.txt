@@ -1,0 +1,33 @@
+VARIABLES AND DATA TYPES - Study Notes
+
+WHAT IS A VARIABLE?
+A variable is used to store data in a program.
+
+Example:
+  x = 10
+  name = "Alice"
+
+COMMON DATA TYPES
+- int: whole numbers (10, -3)
+- float: decimal numbers (3.14)
+- str: text ("hello")
+- bool: True or False
+
+TYPE CHECKING
+  type(x)  # shows the type of variable
+
+TYPE CONVERSION
+  int("5") → 5
+  float(3) → 3.0
+  str(10) → "10"
+
+RULES
+- variable names cannot start with numbers
+- use meaningful names
+
+COMMON MISTAKES
+- mixing types incorrectly
+- forgetting quotes for strings
+
+WHEN TO USE
+Use variables to store and reuse data in your program.

@@ -1,0 +1,21 @@
+SEARCHING - Study Notes
+
+WHAT IS SEARCHING?
+Finding an element in a collection.
+
+LINEAR SEARCH
+Check each element one by one.
+
+EXAMPLE
+  for x in list:
+      if x == target:
+          return True
+
+BINARY SEARCH
+Divide search space in half (sorted list only).
+
+COMMON MISTAKES
+- using binary search on unsorted data
+
+WHEN TO USE
+Use searching to locate data efficiently.

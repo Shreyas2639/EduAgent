@@ -1,0 +1,39 @@
+CONDITIONALS - Study Notes
+
+WHAT IS A CONDITIONAL?
+Conditionals allow a program to make decisions.
+
+IF STATEMENT
+  if condition:
+      code
+
+EXAMPLE
+  age = 18
+  if age >= 18:
+      print("Adult")
+
+IF-ELSE
+  if age >= 18:
+      print("Adult")
+  else:
+      print("Minor")
+
+ELIF
+  if marks > 90:
+      print("A")
+  elif marks > 75:
+      print("B")
+  else:
+      print("C")
+
+COMPARISON OPERATORS
+- == equal
+- != not equal
+- >, <, >=, <=
+
+COMMON MISTAKES
+- using = instead of ==
+- wrong indentation
+
+WHEN TO USE
+Use conditionals when decisions are required.

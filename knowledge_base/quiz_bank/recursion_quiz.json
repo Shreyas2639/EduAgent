@@ -1,0 +1,26 @@
+[
+  {
+    "question": "What is the base case in a recursive factorial function?",
+    "options": ["A. factorial(n-1)", "B. n == 0, return 1", "C. return n * factorial(n-1)", "D. factorial(n+1)"],
+    "answer": "B. n == 0, return 1",
+    "explanation": "The base case stops the recursion. For factorial, when n reaches 0, we return 1 to prevent infinite recursion.",
+    "difficulty": "medium",
+    "topic": "recursion"
+  },
+  {
+    "question": "Which of these is a good use case for recursion?",
+    "options": ["A. Simple loops", "B. Tree traversal", "C. Incrementing a counter", "D. Sequential list processing"],
+    "answer": "B. Tree traversal",
+    "explanation": "Recursion is ideal for tree traversal where each node may have multiple children. It naturally handles divide-and-conquer problems.",
+    "difficulty": "medium",
+    "topic": "recursion"
+  },
+  {
+    "question": "What is the Fibonacci number at position 4?",
+    "options": ["A. 2", "B. 3", "C. 4", "D. 5"],
+    "answer": "B. 3",
+    "explanation": "Fibonacci sequence: 0, 1, 1, 2, 3... Position 4 (0-indexed) is 3. Or if 1-indexed: 1, 1, 2, 3... Position 4 is still 3.",
+    "difficulty": "medium",
+    "topic": "recursion"
+  }
+]

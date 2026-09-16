@@ -1,0 +1,24 @@
+DEBUGGING BASICS - Study Notes
+
+WHAT IS DEBUGGING?
+Finding and fixing errors in code.
+
+COMMON ERRORS
+- Syntax errors (missing colon)
+- Runtime errors (division by zero)
+- Logical errors (wrong output)
+
+TECHNIQUES
+- print statements
+- step-by-step checking
+- reading error messages
+
+EXAMPLE
+  print("Value:", x)
+
+COMMON MISTAKES
+- ignoring error messages
+- guessing instead of testing
+
+WHEN TO USE
+Debug whenever code does not behave as expected.

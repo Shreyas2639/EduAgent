@@ -1,0 +1,27 @@
+[
+  {
+    "question": "What is the difference between parameters and arguments?",
+    "options": [
+      "A. No difference",
+      "B. Parameters are inputs, arguments are outputs",
+      "C. Parameters are variables in function definition, arguments are values passed",
+      "D. Arguments define functions"
+    ],
+    "answer": "C. Parameters are variables in function definition, arguments are values passed",
+    "explanation": "Parameters are placeholders in function definition, arguments are actual values.",
+    "difficulty": "easy",
+    "topic": "functions",
+    "subtopic": "parameters vs arguments",
+    "concept": "function basics"
+  },
+  {
+    "question": "What does a function return if there is no return statement?",
+    "options": ["A. 0", "B. None", "C. Error", "D. Empty string"],
+    "answer": "B. None",
+    "explanation": "Functions return None if no return statement is provided.",
+    "difficulty": "easy",
+    "topic": "functions",
+    "subtopic": "return values",
+    "concept": "function behavior"
+  }
+]

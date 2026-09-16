@@ -1,0 +1,32 @@
+OPERATORS - Study Notes
+
+WHAT ARE OPERATORS?
+Operators perform operations on variables.
+
+ARITHMETIC
++ addition
+- subtraction
+* multiplication
+/ division
+% modulus
+** exponent
+
+EXAMPLE
+  a = 5 + 2  # 7
+
+COMPARISON
+==, !=, >, <, >=, <=
+
+LOGICAL
+and, or, not
+
+EXAMPLE
+  if x > 5 and x < 10:
+      print("Valid")
+
+COMMON MISTAKES
+- mixing types incorrectly
+- misunderstanding operator precedence
+
+WHEN TO USE
+Use operators to perform calculations and comparisons.

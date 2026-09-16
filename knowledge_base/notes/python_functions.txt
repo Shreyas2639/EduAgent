@@ -1,0 +1,68 @@
+PYTHON FUNCTIONS - Study Notes
+
+WHAT IS A FUNCTION?
+A function is a reusable block of code that performs a specific task.
+Functions help organize code, reduce repetition, and make programs easier to understand.
+
+DEFINING FUNCTIONS
+Syntax:
+  def function_name(parameters):
+      """Docstring - describes what the function does"""
+      code block
+      return result
+
+Example:
+  def greet(name):
+      """Returns a greeting message"""
+      return f"Hello, {name}!"
+
+  greet("Alice")  # Output: Hello, Alice!
+
+PARAMETERS VS ARGUMENTS
+- Parameters: variables in the function definition
+- Arguments: values passed when calling the function
+
+Example:
+  def add(a, b):  # a and b are parameters
+      return a + b
+  
+  add(3, 5)  # 3 and 5 are arguments
+
+DEFAULT PARAMETERS
+  def greet(name="Guest"):
+      return f"Hello, {name}!"
+  
+  greet()  # Output: Hello, Guest!
+  greet("Bob")  # Output: Hello, Bob!
+
+RETURN STATEMENT
+- Returns a value from the function
+- Function stops executing when return is reached
+- If no return, function returns None
+
+VARIABLE SCOPE
+- Local scope: variables defined inside a function
+- Global scope: variables defined outside functions
+- Local variables only exist inside their function
+
+MULTIPLE RETURN VALUES
+  def get_coordinates():
+      return 10, 20
+  
+  x, y = get_coordinates()
+
+*ARGS AND **KWARGS
+*args: allows variable number of positional arguments
+  def print_args(*args):
+      for arg in args:
+          print(arg)
+
+**kwargs: allows variable number of keyword arguments
+  def print_kwargs(**kwargs):
+      for key, value in kwargs.items():
+          print(f"{key}: {value}")
+
+LAMBDA FUNCTIONS
+Small anonymous functions defined with lambda keyword:
+  add = lambda x, y: x + y
+  add(3, 5)  # Output: 8

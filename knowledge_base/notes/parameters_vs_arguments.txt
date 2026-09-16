@@ -1,0 +1,20 @@
+PARAMETERS VS ARGUMENTS - Study Notes
+
+PARAMETERS
+Variables defined in function definition.
+
+ARGUMENTS
+Values passed when calling the function.
+
+EXAMPLE
+  def add(a, b):  # parameters
+      return a + b
+
+  add(2, 3)  # arguments
+
+COMMON CONFUSION
+Parameters = placeholders
+Arguments = actual values
+
+WHEN TO USE
+Understand this to correctly use functions.

@@ -1,0 +1,21 @@
+SORTING - Study Notes
+
+WHAT IS SORTING?
+Arranging data in order.
+
+EXAMPLE
+  nums.sort()
+
+COMMON ALGORITHMS
+- Bubble Sort
+- Selection Sort
+
+BUBBLE SORT IDEA
+Swap adjacent elements repeatedly.
+
+COMMON MISTAKES
+- forgetting loops
+- inefficient sorting
+
+WHEN TO USE
+Sorting helps in searching and organizing data.

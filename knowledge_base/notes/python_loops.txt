@@ -1,0 +1,56 @@
+PYTHON LOOPS - Study Notes
+
+WHAT IS A LOOP?
+A loop is a control structure that repeats a block of code multiple times.
+Python has two main types: for loops and while loops.
+
+FOR LOOPS
+A for loop iterates over a sequence (list, string, range).
+Syntax:
+  for variable in sequence:
+      code block
+
+Example:
+  for i in range(5):
+      print(i)
+  Output: 0 1 2 3 4
+
+WHILE LOOPS
+A while loop runs as long as a condition is True.
+Syntax:
+  while condition:
+      code block
+
+Example:
+  count = 0
+  while count < 5:
+      print(count)
+      count += 1
+
+NESTED LOOPS
+A loop inside another loop.
+Example:
+  for i in range(3):
+      for j in range(3):
+          print(i, j)
+
+COMMON MISTAKES
+- Infinite loops: forgetting to update the loop variable in while loops
+- Off-by-one errors: using range(5) gives 0-4, not 1-5
+- Modifying a list while iterating over it
+
+LOOP CONTROL
+- break: exit the loop early
+- continue: skip to next iteration
+- pass: do nothing placeholder
+
+LOOP WITH ENUMERATE
+  fruits = ['apple', 'banana', 'cherry']
+  for index, fruit in enumerate(fruits):
+      print(index, fruit)
+
+LOOP WITH ZIP
+  names = ['Alice', 'Bob']
+  scores = [90, 85]
+  for name, score in zip(names, scores):
+      print(name, score)

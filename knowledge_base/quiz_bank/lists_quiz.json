@@ -1,0 +1,22 @@
+[
+  {
+    "question": "How do you add an item to a list?",
+    "options": ["A. add()", "B. insert()", "C. append()", "D. push()"],
+    "answer": "C. append()",
+    "explanation": "append() adds an item to the end of the list.",
+    "difficulty": "easy",
+    "topic": "lists",
+    "subtopic": "list methods",
+    "concept": "data structures"
+  },
+  {
+    "question": "What does list[1:3] return?",
+    "options": ["A. index 1 only", "B. index 1 and 2", "C. index 2 and 3", "D. full list"],
+    "answer": "B. index 1 and 2",
+    "explanation": "Slicing excludes the end index.",
+    "difficulty": "medium",
+    "topic": "lists",
+    "subtopic": "slicing",
+    "concept": "data access"
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "question": "Which operator checks equality?",
+    "options": ["A. =", "B. ==", "C. !=", "D. >"],
+    "answer": "B. ==",
+    "explanation": "== is used to compare values.",
+    "difficulty": "easy",
+    "topic": "conditionals",
+    "subtopic": "comparison operators",
+    "concept": "decision making"
+  },
+  {
+    "question": "What does elif mean?",
+    "options": [
+      "A. End loop",
+      "B. Else if condition",
+      "C. Error condition",
+      "D. Execute always"
+    ],
+    "answer": "B. Else if condition",
+    "explanation": "elif allows multiple conditions to be checked.",
+    "difficulty": "easy",
+    "topic": "conditionals",
+    "subtopic": "elif usage",
+    "concept": "control flow"
+  }
+]

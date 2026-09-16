@@ -1,0 +1,16 @@
+groq
+langchain
+langchain-groq
+langchain-community
+langgraph
+streamlit
+faiss-cpu
+sentence-transformers
+pypdf
+sympy
+wikipedia-api
+python-dotenv
+sqlalchemy
+pandas
+numpy
+langchain-text-splitters 

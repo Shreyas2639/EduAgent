@@ -1,0 +1,24 @@
+DICTIONARIES - Study Notes
+
+WHAT IS A DICTIONARY?
+Stores data as key-value pairs.
+
+EXAMPLE
+  student = {"name": "Alice", "age": 20}
+
+ACCESS
+  student["name"]
+
+ADD VALUE
+  student["grade"] = "A"
+
+LOOP
+  for key, value in student.items():
+      print(key, value)
+
+COMMON MISTAKES
+- accessing non-existing keys
+- duplicate keys
+
+WHEN TO USE
+Use dictionaries when data is mapped (key → value).

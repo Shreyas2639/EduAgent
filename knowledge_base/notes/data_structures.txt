@@ -1,0 +1,41 @@
+DATA STRUCTURES - Study Notes
+
+LISTS
+- Ordered, mutable, allows duplicates
+- my_list = [1, 2, 3]
+- Access: my_list[0] gives 1
+- Append: my_list.append(4)
+- Slice: my_list[1:3] gives [2, 3]
+
+TUPLES
+- Ordered, immutable
+- my_tuple = (1, 2, 3)
+- Cannot modify after creation
+- Use for fixed data
+
+DICTIONARIES
+- Key-value pairs
+- my_dict = {'name': 'Alice', 'age': 20}
+- Access: my_dict['name'] gives 'Alice'
+- Keys must be unique and immutable
+
+SETS
+- Unordered, no duplicates
+- my_set = {1, 2, 3}
+- Operations: union |, intersection &, difference -
+
+STACKS (using list)
+- LIFO: Last In First Out
+- Push: stack.append(item)
+- Pop: stack.pop()
+
+QUEUES (using collections.deque)
+- FIFO: First In First Out
+- Enqueue: queue.append(item)
+- Dequeue: queue.popleft()
+
+BIG-O COMPLEXITY
+- List access: O(1)
+- List search: O(n)
+- Dict access: O(1) average
+- Dict search: O(1) average

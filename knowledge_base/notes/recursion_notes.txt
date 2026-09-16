@@ -1,0 +1,41 @@
+RECURSION - Study Notes
+
+WHAT IS RECURSION?
+Recursion is when a function calls itself to solve a smaller version of the same problem.
+Every recursive function needs:
+1. A base case (stops recursion)
+2. A recursive case (calls itself with smaller input)
+
+BASIC EXAMPLE: Factorial
+  def factorial(n):
+      if n == 0:        # base case
+          return 1
+      return n * factorial(n - 1)  # recursive case
+
+  factorial(5) = 5 * factorial(4) = 5 * 4 * 3 * 2 * 1 = 120
+
+FIBONACCI SEQUENCE
+  def fibonacci(n):
+      if n <= 1:
+          return n
+      return fibonacci(n-1) + fibonacci(n-2)
+
+RECURSION vs ITERATION
+- Recursion: elegant, good for tree/graph problems
+- Iteration: more efficient for simple loops
+- Deep recursion can cause RecursionError (stack overflow)
+
+CALL STACK
+Each recursive call adds a frame to the call stack.
+Python default recursion limit is 1000 calls.
+
+WHEN TO USE RECURSION
+- Tree traversal
+- Directory exploration
+- Divide and conquer (merge sort, binary search)
+- Problems naturally defined recursively
+
+COMMON MISTAKES
+- Missing base case causes infinite recursion
+- Base case never reached causes stack overflow
+- Not reducing problem size in each call

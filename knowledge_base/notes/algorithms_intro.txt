@@ -1,0 +1,23 @@
+ALGORITHMS - Study Notes
+
+WHAT IS AN ALGORITHM?
+A step-by-step solution to a problem.
+
+EXAMPLE
+Finding max number:
+  max = nums[0]
+  for n in nums:
+      if n > max:
+          max = n
+
+CHARACTERISTICS
+- clear steps
+- finite
+- efficient
+
+COMMON TYPES
+- searching
+- sorting
+
+WHEN TO USE
+Algorithms are used to solve problems efficiently.
