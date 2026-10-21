@@ -1,143 +1,74 @@
-# EduAgent
+# EduAgent — Project 1
 
-EduAgent is a personalized AI tutor I built to explore how agentic AI can support learning instead of simply answering questions. It can explain Python concepts, create quizzes, evaluate answers, solve symbolic math problems, remember a learner's progress, and recommend what to study next.
+EduAgent helps a simulated learner study Python Fundamentals using bundled course notes, explanations, practice quizzes, and reusable learning preferences. It is one logical LLM-powered tutor implemented as a stateful LangGraph workflow. Helper modules named `agents` provide functions for that tutor; this milestone does not claim multi-agent collaboration.
 
-My goal was to combine several useful AI patterns in one practical application: explicit agent routing with LangGraph, retrieval-augmented generation over private course notes, deterministic tools for tasks such as algebra, and persistent learner memory with SQLite.
+The Project 1 path adds a genuine approval pause before saving substantive learning memory. A learner can inspect a proposed change, approve or reject it, correct a preference, and start a new conversation thread that reuses approved records.
 
-## What EduAgent Can Do
+## Run
 
-- Explain concepts using locally stored course notes as the primary source
-- Generate three-question multiple-choice quizzes on requested topics
-- Evaluate quiz answers and provide personalized feedback
-- Track strong, weak, and completed topics across sessions
-- Recommend the next topic using a prerequisite-based course map
-- Solve symbolic math expressions with SymPy
-- Retrieve external background information from Wikipedia when local notes are insufficient
-- Block requests that involve academic cheating or harmful assistance
+Use Python 3.12 and a virtual environment from the repository root:
 
-## How It Works
-
-Every message first passes through a safety check. Safe requests are sent to a coordinator that uses the Groq LLM to classify the request as one of six intents:
-
-- `EXPLAIN`
-- `QUIZ`
-- `SOLVE`
-- `FEEDBACK`
-- `MEMORY`
-- `GENERAL`
-
-LangGraph then routes the request to the appropriate workflow node. Explanation and quiz requests can retrieve relevant content from the FAISS index. Math requests can use SymPy, and explanation requests can fall back to Wikipedia when the local course notes do not contain relevant information.
-
-The Streamlit interface manages the conversation and interactive quiz form. Quiz results are evaluated and written to SQLite so that progress remains available after the browser is refreshed or a new session begins.
-
-## Technology Stack
-
-- Python
-- Streamlit
-- LangGraph
-- Groq with Llama 3.3 70B
-- FAISS
-- Sentence Transformers
-- SQLite
-- SymPy
-- Wikipedia API
-- LangChain text splitters
-
-## Project Structure
-
-```text
-eduagent/
-|-- agents/              # Intent classification, tutoring, quizzes, and feedback
-|-- database/            # SQLite database used for persistent learner memory
-|-- graph/               # LangGraph workflow and routing
-|-- knowledge_base/
-|   |-- notes/           # Local Python course material
-|   `-- quiz_bank/       # Sample quiz content
-|-- memory/              # Short-term conversation and long-term learner memory
-|-- rag/                 # Document loading, embeddings, indexing, and retrieval
-|-- safety/              # Rule-based and LLM-assisted safety checks
-|-- tools/               # SymPy and Wikipedia integrations
-|-- vector_store/        # Persisted FAISS index and document metadata
-|-- app.py               # Streamlit application
-|-- build_index.py       # Rebuilds the FAISS knowledge index
-|-- course_map.py        # Course topics, prerequisites, and recommendations
-|-- quick_test.py        # Basic validation tests
-`-- requirements.txt     # Python dependencies
+```bash
+python -m venv .venv
+# macOS/Linux:
+source .venv/bin/activate
+# Windows PowerShell instead:
+# .venv\Scripts\Activate.ps1
+python -m pip install -r requirements-project1.txt
 ```
 
-## Learner Memory
+Copy `.env.example` to `.env` and set your own `GROQ_API_KEY`. The model defaults to `llama-3.3-70b-versatile`; set `GROQ_MODEL` if your Groq account requires another available model. Never commit `.env`.
 
-EduAgent uses two forms of memory:
-
-1. Short-term memory keeps recent conversation messages available during the current Streamlit session.
-2. Long-term memory stores learner information in `database/eduagent.db`.
-
-The SQLite database contains student profiles, strong and weak topics, completed topics, recent quiz attempts, and session summaries. The database included in this repository contains demonstration data used while testing the application.
-
-## Getting Started
-
-### 1. Create a virtual environment
-
-```powershell
-python -m venv venv
-venv\Scripts\activate
+```bash
+python -m streamlit run app.py
 ```
 
-### 2. Install the dependencies
+Enter a **simulated** learner name. Set the preferred format and level, click **Review memory changes**, then approve. Ask `Explain Python loops`. Review the proposed last-topic record. Use **New thread — keep approved memory** and ask `Explain Python functions`. Inspect the saved records, then correct a preference or reject a change.
 
-```powershell
-pip install -r requirements.txt
+The application sends relevant prompts, learning preferences, and course-note excerpts to Groq. SQLite files remain local. Use authorized sample data. Name-based demo identities are not authentication.
+
+## Project 1 demonstration
+
+```bash
+python demo_project1.py
 ```
 
-### 3. Configure the Groq API key
+This uses a real Groq LLM and asks for each approval interactively. It demonstrates a baseline, two saved preference records, a normal request, a new thread using memory, a correction, a later request after correction, and rejection. Follow the rejection instruction at the final prompt. Each run creates a fresh directory under `demo_runs/` and saves `evidence.json`; previous runs are retained.
 
-Create a `.env` file in the project directory:
+For offline development only:
 
-```env
-GROQ_API_KEY=your_groq_api_key
+```bash
+python demo_project1.py --simulate
+# Explicitly scripted simulation for automated verification only:
+python demo_project1.py --simulate --scripted
+python -m pytest -q
 ```
 
-You can create a Groq API key at [console.groq.com](https://console.groq.com/).
+Simulation replaces provider responses with a deterministic fake. It uses the real graph, note-retrieval tool, SQLite memory, and approval branches. It does **not** prove live LLM integration or replace a human approval demonstration. Live mode never scripts decisions.
 
-### 4. Build the knowledge index
+## State and memory boundaries
 
-The repository already contains a generated FAISS index. Run this command if you change the course notes or want to rebuild it:
+- `AgentState`, `ShortTermMemory`, and `InMemorySaver` hold the current request, conversation, quiz, sources, pending proposal, and approval checkpoint. A UUID identifies each UI thread.
+- SQLite is an equivalent cross-thread user-memory backend. `user_memories` contains separate `(student_id, memory_key)` records for `preferred_style`, `level`, and `last_topic`, including revisions and source-thread IDs.
+- The tutor prompt actually uses approved style and level. A correction updates the existing record rather than accumulating conflicting values.
+- Explicit preferences and valid course progress are useful for later tutoring. Arbitrary messages, credentials, unrelated facts, and inferred personal details are not reusable-memory candidates. Only fixed preference values and curriculum topics are accepted.
+- The current application writes proposed preferences, last studied topic, and quiz progress only after approval. Rejecting preserves the answer but changes no reusable learning record. Account registration/defaults and database schema initialization are separate setup operations.
+- `database/eduagent_local.db` is created automatically and ignored by Git. Set `EDUAGENT_DB_PATH` to use another path. The historical tracked `database/eduagent.db` is not the default data source.
+- Checkpoints are in RAM. Restarting the app loses paused conversations; approved SQLite records survive. Restart-safe checkpoints are not required for Project 1.
 
-```powershell
-python build_index.py
-```
+## Information source and optional older tools
 
-### 5. Start EduAgent
+The Project 1 workflow explicitly retrieves relevant bundled `.txt` notes using a small keyword-based tool in `rag/local_retriever.py`. Missing sources produce an honest response instead of invented course notes. No embedding download or prebuilt index is needed for this path.
 
-```powershell
-streamlit run app.py
-```
+The earlier FAISS index builder, vector retriever, Wikipedia tool, and broad `requirements.txt` remain for experimentation. They are not necessary to run or verify the Project 1 path. SymPy remains a helper for course-related problem solving. The older `quick_test.py` checks optional components; use the new `tests/` suite for Project 1 acceptance checks.
 
-Streamlit will provide a local URL, normally `http://localhost:8501`.
+## Documentation and evidence
 
-## Example Prompts
+- [Requirement audit: original repository versus this change](docs/PROJECT1_AUDIT.md)
+- [Architecture and state boundaries](docs/PROJECT1_ARCHITECTURE.md)
+- [Demo steps and expected results](docs/PROJECT1_DEMO.md)
+- [Short report draft](docs/PROJECT1_REPORT.md)
+- [Recorded automated test results](docs/project1_test_results.txt)
+- [Labeled simulation evidence](docs/project1_simulation_evidence.json)
 
-```text
-Explain Python loops
-Quiz me on recursion
-Solve: x^2 - 5x + 6 = 0
-Show my progress
-What should I study next?
-```
-
-## Testing
-
-Run the included validation script with:
-
-```powershell
-python quick_test.py
-```
-
-The test runner checks core imports, database initialization, the safety guard, short-term memory, Wikipedia retrieval, and SymPy integration. Some checks require internet access and a valid Groq API key.
-
-## Current Scope
-
-EduAgent currently focuses on a Python Fundamentals curriculum. Learners are identified by a normalized version of the name entered in the Streamlit sidebar, so this version is intended as an educational prototype rather than a production learning platform.
-
-I see this project as a foundation for experimenting with adaptive difficulty, broader course support, stronger authentication, richer evaluation, and more detailed learning analytics.
-
+**Submission still requires:** a live run with a valid LLM key, actual demonstration evidence, confirmed team size and truthful individual contributions, and a finalized 1–2 page report. No course-grade prediction is made from offline tests.

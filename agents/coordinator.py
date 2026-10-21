@@ -1,10 +1,9 @@
 import os
-from groq import Groq
+from agents.llm import get_client
 from dotenv import load_dotenv
 from course_map import COURSE_TOPICS
 
 load_dotenv()
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 INTENT_PROMPT = """You are an intent classifier for an educational tutor system.
 
@@ -33,8 +32,8 @@ Intent:"""
 
 def classify_intent(message: str, chat_history: str = "") -> str:
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        response = get_client().chat.completions.create(
+            model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
             messages=[{
                 "role": "user",
                 "content": INTENT_PROMPT.format(
@@ -83,8 +82,8 @@ Reply with only one of:
 """
 
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        response = get_client().chat.completions.create(
+            model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
             messages=[{"role": "user", "content": prompt}],
             max_tokens=20,
             temperature=0

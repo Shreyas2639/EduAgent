@@ -1,15 +1,11 @@
 import os
 import json
 import re
-from groq import Groq
+from agents.llm import get_client
 from dotenv import load_dotenv
-from rag.retriever import retrieve
-from tools.wikipedia_tool import search_wikipedia
-from tools.sympy_tool import solve_math
-from memory.long_term_db import update_last_topic
+from rag.local_retriever import retrieve
 
 load_dotenv()
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 VAGUE_PHRASES = {
     "yes", "yes please", "sure", "okay", "go ahead", "my learning", "that", "this"
@@ -88,22 +84,17 @@ def extract_topic_from_message(message: str) -> str:
         return ""
     return topic
 
-def explain_concept(message: str, student_profile: dict, chat_history: str, student_id: str = None) -> str:
-    context_chunks = retrieve(message, top_k=3)
+def explain_concept(message: str, student_profile: dict, chat_history: str, student_id: str = None, context_chunks=None) -> str:
+    if context_chunks is None:
+        context_chunks = retrieve(message, top_k=3)
     rag_context = "\n\n".join(context_chunks)
-    wiki_info = ""
-
-    if context_chunks and "No relevant" in context_chunks[0]:
-        topic_words = clean_topic(message)
-        if topic_words:
-            wiki_info = search_wikipedia(topic_words)
-
     level = student_profile.get("level", "beginner")
     weak_topics = student_profile.get("weak_topics", [])
     weak_note = f"Note: This student struggled with: {', '.join(weak_topics)}. Be extra clear." if weak_topics else ""
 
     prompt = f"""You are EduAgent, a friendly and patient educational tutor.
 Student Level: {level}
+Preferred format: {student_profile.get("preferred_style", "simple")}
 {weak_note}
 
 Recent Chat History:
@@ -111,9 +102,6 @@ Recent Chat History:
 
 Course Notes (PRIMARY source):
 {rag_context}
-
-Additional Context (Wikipedia):
-{wiki_info}
 
 Student's Question: {message}
 
@@ -126,8 +114,8 @@ Instructions:
 
 Response:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = get_client().chat.completions.create(
+        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
         messages=[{"role": "user", "content": prompt}],
         max_tokens=700,
         temperature=0.7
@@ -135,20 +123,14 @@ Response:"""
 
     final_response = (response.choices[0].message.content or "").strip()
 
-    if student_id:
-        topic = extract_topic_from_message(message)
-        INVALID_TOPICS = {"off topic", "off_topic", "unknown", "", None}
-
-        if topic not in INVALID_TOPICS and topic not in VAGUE_PHRASES:
-            update_last_topic(student_id, topic)
-
     return final_response
 
-def generate_quiz(topic: str, student_profile: dict, num_questions: int = 3) -> dict:
+def generate_quiz(topic: str, student_profile: dict, num_questions: int = 3, context_chunks=None) -> dict:
     topic = clean_topic(topic)
     level = student_profile.get("level", "beginner")
     weak_topics = student_profile.get("weak_topics", [])
-    context_chunks = retrieve(topic, top_k=3)
+    if context_chunks is None:
+        context_chunks = retrieve(topic, top_k=3)
     related_notes = any(topic.lower() in chunk.lower() for chunk in context_chunks)
     rag_context = "\n\n".join(context_chunks) if related_notes else ""
     context_hint = "Note: Course Notes do not appear to contain the requested topic, so use the requested topic as the primary focus." if not related_notes else ""
@@ -157,6 +139,7 @@ def generate_quiz(topic: str, student_profile: dict, num_questions: int = 3) -> 
     prompt = f"""You are EduAgent quiz generator.
 Topic: {topic}
 Student Level: {level}
+Preferred format: {student_profile.get("preferred_style", "simple")}
 {weak_focus}
 
 {context_hint}
@@ -180,8 +163,8 @@ Return ONLY valid JSON array:
   }}
 ]"""
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = get_client().chat.completions.create(
+        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1000,
         temperature=0.5
@@ -195,11 +178,25 @@ Return ONLY valid JSON array:
             content = content.split("```")[1].split("```")[0].strip()
 
         questions = json.loads(content)
+        if not isinstance(questions, list) or len(questions) != num_questions:
+            raise ValueError("Expected exactly three question objects.")
+        for question in questions:
+            if (not isinstance(question, dict) or
+                    not isinstance(question.get("question"), str) or
+                    not question["question"].strip() or
+                    not isinstance(question.get("options"), list) or
+                    len(question["options"]) != 4 or
+                    not all(isinstance(option, str) for option in question["options"]) or
+                    len(set(question["options"])) != 4 or
+                    question.get("answer") not in question["options"] or
+                    not isinstance(question.get("explanation"), str)):
+                raise ValueError("Malformed quiz question.")
         return {"questions": questions, "topic": topic}
     except Exception as e:
         return {"questions": [], "topic": topic, "error": str(e), "raw": response.choices[0].message.content.strip()}
 
 def solve_problem(message: str, student_profile: dict, chat_history: str) -> str:
+    from tools.sympy_tool import solve_math
     math_keywords = ["derivative", "integral", "solve", "factor", "simplify", "equation"]
     is_math = any(kw in message.lower() for kw in math_keywords)
     math_result = ""
@@ -234,8 +231,8 @@ Solve step by step:
 
 Response:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = get_client().chat.completions.create(
+        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
         messages=[{"role": "user", "content": prompt}],
         max_tokens=800,
         temperature=0.3

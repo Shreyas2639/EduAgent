@@ -1,0 +1,7 @@
+# Verified with Python 3.12. The original requirements.txt retains optional FAISS tooling.
+langgraph==1.0.3
+groq==1.7.0
+python-dotenv==1.2.4
+streamlit==1.66.0
+sympy==1.14.0
+pytest==9.1.1

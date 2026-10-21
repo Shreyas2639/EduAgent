@@ -1,0 +1,440 @@
+{
+  "mode": "SIMULATED MODEL / SCRIPTED APPROVALS",
+  "cases": [
+    {
+      "name": "Baseline without useful memory",
+      "thread_id": "baseline",
+      "input": "Explain Python loops",
+      "retrieved_memory": [],
+      "response": "SIMULATION: A loop repeats work for each item in a sequence.",
+      "steps": [
+        "start",
+        "load_memory",
+        "safety",
+        "coordinator",
+        "retrieve_course_notes",
+        "tutor",
+        "propose_memory",
+        "human_approval",
+        "reject_memory"
+      ],
+      "approval": false,
+      "memory_before": [],
+      "memory_after": [],
+      "memory_status": "rejected"
+    },
+    {
+      "name": "Store two explicit preference records",
+      "thread_id": "preferences",
+      "input": "Update my learning preferences.",
+      "retrieved_memory": [],
+      "response": "Review the proposed learning preferences.",
+      "steps": [
+        "start",
+        "load_memory",
+        "safety",
+        "coordinator",
+        "propose_memory",
+        "human_approval",
+        "commit_memory"
+      ],
+      "approval": true,
+      "memory_before": [],
+      "memory_after": [
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "memory_status": "saved"
+    },
+    {
+      "name": "Normal request using permitted notes",
+      "thread_id": "normal",
+      "input": "Explain Python loops",
+      "retrieved_memory": [
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "response": "- SIMULATION: A loop repeats work.\n- Example: for item in items: print(item).",
+      "steps": [
+        "start",
+        "load_memory",
+        "safety",
+        "coordinator",
+        "retrieve_course_notes",
+        "tutor",
+        "propose_memory",
+        "human_approval",
+        "commit_memory"
+      ],
+      "approval": true,
+      "memory_before": [
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "memory_after": [
+        {
+          "key": "last_topic",
+          "value": "loops",
+          "revision": 1,
+          "source_thread": "normal"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "memory_status": "saved"
+    },
+    {
+      "name": "Later request in a different thread",
+      "thread_id": "later",
+      "input": "Explain Python functions",
+      "retrieved_memory": [
+        {
+          "key": "last_topic",
+          "value": "loops",
+          "revision": 1,
+          "source_thread": "normal"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "response": "- SIMULATION: A loop repeats work.\n- Example: for item in items: print(item).",
+      "steps": [
+        "start",
+        "load_memory",
+        "safety",
+        "coordinator",
+        "retrieve_course_notes",
+        "tutor",
+        "propose_memory",
+        "human_approval",
+        "commit_memory"
+      ],
+      "approval": true,
+      "memory_before": [
+        {
+          "key": "last_topic",
+          "value": "loops",
+          "revision": 1,
+          "source_thread": "normal"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "memory_after": [
+        {
+          "key": "last_topic",
+          "value": "functions",
+          "revision": 2,
+          "source_thread": "later"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "memory_status": "saved"
+    },
+    {
+      "name": "Correct a saved preference",
+      "thread_id": "correction",
+      "input": "Correct my preferred format.",
+      "retrieved_memory": [
+        {
+          "key": "last_topic",
+          "value": "functions",
+          "revision": 2,
+          "source_thread": "later"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "response": "Review the proposed learning preferences.",
+      "steps": [
+        "start",
+        "load_memory",
+        "safety",
+        "coordinator",
+        "propose_memory",
+        "human_approval",
+        "commit_memory"
+      ],
+      "approval": true,
+      "memory_before": [
+        {
+          "key": "last_topic",
+          "value": "functions",
+          "revision": 2,
+          "source_thread": "later"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "bullet_points",
+          "revision": 1,
+          "source_thread": "preferences"
+        }
+      ],
+      "memory_after": [
+        {
+          "key": "last_topic",
+          "value": "functions",
+          "revision": 2,
+          "source_thread": "later"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "worked_examples",
+          "revision": 2,
+          "source_thread": "correction"
+        }
+      ],
+      "memory_status": "saved"
+    },
+    {
+      "name": "Later request after correction",
+      "thread_id": "after-correction",
+      "input": "Explain Python loops",
+      "retrieved_memory": [
+        {
+          "key": "last_topic",
+          "value": "functions",
+          "revision": 2,
+          "source_thread": "later"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "worked_examples",
+          "revision": 2,
+          "source_thread": "correction"
+        }
+      ],
+      "response": "SIMULATION: Worked example: for n in [1, 2]: print(n). This prints 1 and 2.",
+      "steps": [
+        "start",
+        "load_memory",
+        "safety",
+        "coordinator",
+        "retrieve_course_notes",
+        "tutor",
+        "propose_memory",
+        "human_approval",
+        "commit_memory"
+      ],
+      "approval": true,
+      "memory_before": [
+        {
+          "key": "last_topic",
+          "value": "functions",
+          "revision": 2,
+          "source_thread": "later"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "worked_examples",
+          "revision": 2,
+          "source_thread": "correction"
+        }
+      ],
+      "memory_after": [
+        {
+          "key": "last_topic",
+          "value": "loops",
+          "revision": 3,
+          "source_thread": "after-correction"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "worked_examples",
+          "revision": 2,
+          "source_thread": "correction"
+        }
+      ],
+      "memory_status": "saved"
+    },
+    {
+      "name": "Reject a proposed change",
+      "thread_id": "rejection",
+      "input": "Change my learning level.",
+      "retrieved_memory": [
+        {
+          "key": "last_topic",
+          "value": "loops",
+          "revision": 3,
+          "source_thread": "after-correction"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "worked_examples",
+          "revision": 2,
+          "source_thread": "correction"
+        }
+      ],
+      "response": "Review the proposed learning preferences.",
+      "steps": [
+        "start",
+        "load_memory",
+        "safety",
+        "coordinator",
+        "propose_memory",
+        "human_approval",
+        "reject_memory"
+      ],
+      "approval": false,
+      "memory_before": [
+        {
+          "key": "last_topic",
+          "value": "loops",
+          "revision": 3,
+          "source_thread": "after-correction"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "worked_examples",
+          "revision": 2,
+          "source_thread": "correction"
+        }
+      ],
+      "memory_after": [
+        {
+          "key": "last_topic",
+          "value": "loops",
+          "revision": 3,
+          "source_thread": "after-correction"
+        },
+        {
+          "key": "level",
+          "value": "intermediate",
+          "revision": 1,
+          "source_thread": "preferences"
+        },
+        {
+          "key": "preferred_style",
+          "value": "worked_examples",
+          "revision": 2,
+          "source_thread": "correction"
+        }
+      ],
+      "memory_status": "rejected"
+    }
+  ],
+  "rejection_demonstrated": true
+}

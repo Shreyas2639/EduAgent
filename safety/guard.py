@@ -1,9 +1,8 @@
 import os
-from groq import Groq
+from agents.llm import get_client
 from dotenv import load_dotenv
 
 load_dotenv()
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 UNSAFE_KEYWORDS = [
     "cheat", "cheating", "exam answers", "test answers",
@@ -69,8 +68,8 @@ UNSAFE
 """
 
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        response = get_client().chat.completions.create(
+            model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
             messages=[{"role": "user", "content": prompt}],
             max_tokens=5,
             temperature=0
@@ -83,10 +82,11 @@ UNSAFE
                 "I can help you study with explanations, practice questions, and worked examples."
             )
 
-        return True, ""
+        if label == "SAFE":
+            return True, ""
+        return False, "I could not validate this request. Please rephrase it."
     except Exception as e:
-        print(f"LLM safety check error: {e}")
-        return True, ""
+        return False, "The safety check is unavailable. Please try again later."
 
 def is_safe(message: str) -> tuple:
     message_lower = message.lower().strip()

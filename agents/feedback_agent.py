@@ -1,17 +1,11 @@
 import os
 import re
-from groq import Groq
+from agents.llm import get_client
 from course_map import COURSE_TOPICS
 from dotenv import load_dotenv
-from memory.long_term_db import (
-    get_learner_profile, update_weak_topics,
-    update_strong_topics, remove_weak_topic,
-    remove_strong_topic, save_quiz_attempt,
-    add_completed_topic
-)
+from memory.long_term_db import get_learner_profile
 
 load_dotenv()
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def clean_topic(text: str) -> str:
     text = text.lower().strip()
@@ -56,7 +50,7 @@ def clean_topic(text: str) -> str:
 def evaluate_answer(student_id: str, topic: str, question: str,
                     student_answer: str, correct_answer: str, explanation: str) -> str:
     topic = clean_topic(topic)
-    is_correct = student_answer.strip().lower()[:15] == correct_answer.strip().lower()[:15]
+    is_correct = student_answer.strip().lower() == correct_answer.strip().lower()
 
     tone = "positive and encouraging" if is_correct else "constructive and helpful"
     prompt = f"""You are EduAgent providing {tone} feedback.
@@ -72,8 +66,8 @@ If wrong: explain what was incorrect, give the right concept, encourage them.
 
 Feedback:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = get_client().chat.completions.create(
+        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
         messages=[{"role": "user", "content": prompt}],
         max_tokens=150,
         temperature=0.6
@@ -102,8 +96,8 @@ Write a friendly progress report (3-4 sentences) that:
 
 Progress Report:"""
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = get_client().chat.completions.create(
+        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
         messages=[{"role": "user", "content": prompt}],
         max_tokens=250,
         temperature=0.7
@@ -113,13 +107,15 @@ Progress Report:"""
 def evaluate_quiz_results(student_id: str, topic: str, questions: list,
                           student_answers: list) -> dict:
     topic = clean_topic(topic)
+    if not questions or len(questions) != len(student_answers):
+        raise ValueError("Answer every question before evaluation.")
     score = 0
     feedback_items = []
     mistakes = []
 
     for q, student_ans in zip(questions, student_answers):
         correct = q.get("answer", "")
-        is_correct = student_ans.strip()[:15].lower() == correct.strip()[:15].lower()
+        is_correct = student_ans.strip().lower() == correct.strip().lower()
 
         if is_correct:
             score += 1
@@ -138,18 +134,8 @@ def evaluate_quiz_results(student_id: str, topic: str, questions: list,
             "feedback": fb
         })
 
-    save_quiz_attempt(student_id, topic, score, len(questions), mistakes)
-
-    if questions:
-        if score >= len(questions) * 0.7:
-            remove_weak_topic(student_id, topic)
-            update_strong_topics(student_id, topic)
-            add_completed_topic(student_id, topic)
-        else:
-            remove_strong_topic(student_id, topic)
-            update_weak_topics(student_id, topic)
-
     return {
+        "topic": topic,
         "score": score,
         "total": len(questions),
         "percentage": round(score / len(questions) * 100) if questions else 0,
@@ -187,8 +173,8 @@ Reply with only one of:
 """
 
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+        response = get_client().chat.completions.create(
+            model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
             messages=[{"role": "user", "content": prompt}],
             max_tokens=20,
             temperature=0

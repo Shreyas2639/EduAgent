@@ -1,0 +1,8 @@
+Command: python -m pytest -q --disable-warnings
+Environment: Python 3.12.14; LangGraph 1.0.3; pytest 9.1.1
+Model responses: explicit offline simulation; no live Groq calls
+
+........................                                                 [100%]
+24 passed, 1 warning in 1.71s
+
+The warning is a LangGraph serializer pending-deprecation notice.

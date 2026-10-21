@@ -4,10 +4,12 @@ import os
 import re
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'eduagent.db')
+DB_PATH = os.environ.get('EDUAGENT_DB_PATH') or os.path.join(
+    os.path.dirname(__file__), '..', 'database', 'eduagent_local.db'
+)
 
 def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -58,6 +60,18 @@ def init_db():
             topic TEXT,
             summary TEXT,
             timestamp TEXT
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_memories (
+            student_id TEXT NOT NULL,
+            memory_key TEXT NOT NULL,
+            value TEXT NOT NULL,
+            revision INTEGER NOT NULL DEFAULT 1,
+            source_thread TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (student_id, memory_key)
         )
     ''')
 
@@ -116,7 +130,7 @@ def get_learner_profile(student_id: str) -> dict:
     if not student:
         return {}
 
-    return {
+    result = {
         "name": student[1],
         "level": student[2],
         "preferred_style": student[3],
@@ -128,6 +142,9 @@ def get_learner_profile(student_id: str) -> dict:
             {"topic": a[0], "score": a[1], "total": a[2]} for a in recent_attempts
         ]
     }
+    result.update({record["key"]: record["value"] for record in get_memory_records(student_id)})
+    return result
+
 
 def add_completed_topic(student_id: str, topic: str):
     topic = normalize_topic(topic)
@@ -344,3 +361,93 @@ def update_last_topic(student_id: str, topic: str):
     )
     conn.commit()
     conn.close()
+
+
+MEMORY_VALUES = {
+    "preferred_style": {"simple", "bullet_points", "worked_examples"},
+    "level": {"beginner", "intermediate", "advanced"},
+}
+
+
+def validate_memory_changes(changes: dict) -> dict:
+    """Keep explicit learning preferences and course topics, never arbitrary chat."""
+    from course_map import COURSE_TOPICS
+    if not isinstance(changes, dict) or not changes:
+        raise ValueError("Provide at least one supported memory change.")
+    for key, value in changes.items():
+        allowed = set(COURSE_TOPICS) if key == "last_topic" else MEMORY_VALUES.get(key, set())
+        if not isinstance(value, str) or value not in allowed:
+            raise ValueError(f"Unsupported memory key or value: {key}")
+    return dict(changes)
+
+
+def get_memory_records(student_id: str) -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute(
+            "SELECT memory_key, value, revision, source_thread FROM user_memories "
+            "WHERE student_id = ? ORDER BY memory_key", (student_id,)
+        ).fetchall()
+    return [dict(zip(("key", "value", "revision", "source_thread"), row)) for row in rows]
+
+
+def commit_approved_memory(student_id: str, thread_id: str, changes: dict,
+                           approved: bool, quiz_result: dict | None = None):
+    """Apply one reviewed proposal atomically. Rejection cannot write anything."""
+    if type(approved) is not bool:
+        raise ValueError("Approval must be the boolean True or False.")
+    if not approved:
+        return
+    changes = validate_memory_changes(changes)
+    if not thread_id:
+        raise ValueError("A source thread ID is required.")
+    if quiz_result is not None:
+        score, total = quiz_result["score"], quiz_result["total"]
+        if (type(score) is not int or type(total) is not int or
+                not 0 <= score <= total or total <= 0 or
+                quiz_result["topic"] != changes.get("last_topic")):
+            raise ValueError("Invalid quiz result.")
+    now = datetime.now().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        if not conn.execute("SELECT 1 FROM students WHERE student_id = ?", (student_id,)).fetchone():
+            raise ValueError("Create the learner before saving memory.")
+        for key, value in changes.items():
+            conn.execute(
+                "INSERT INTO user_memories VALUES (?, ?, ?, 1, ?, ?) "
+                "ON CONFLICT(student_id, memory_key) DO UPDATE SET "
+                "value=excluded.value, revision=user_memories.revision+1, "
+                "source_thread=excluded.source_thread, updated_at=excluded.updated_at",
+                (student_id, key, value, thread_id, now),
+            )
+            if key in MEMORY_VALUES:
+                # Column names come only from this fixed allowlist.
+                conn.execute(f"UPDATE students SET {key} = ? WHERE student_id = ?", (value, student_id))
+            else:
+                conn.execute(
+                    "UPDATE learning_profile SET last_topic = ?, last_updated = ? WHERE student_id = ?",
+                    (value, now, student_id),
+                )
+        if quiz_result is not None:
+            topic = quiz_result["topic"]
+            conn.execute(
+                "INSERT INTO quiz_attempts (student_id, topic, score, total, mistakes, timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?)", (student_id, topic, score, total, "[]", now),
+            )
+            weak_json, strong_json, completed_json = conn.execute(
+                "SELECT weak_topics, strong_topics, completed_topics FROM learning_profile WHERE student_id = ?",
+                (student_id,),
+            ).fetchone()
+            weak, strong, completed = map(json.loads, (weak_json, strong_json, completed_json))
+            weak = [item for item in weak if item != topic]
+            strong = [item for item in strong if item != topic]
+            if score / total >= 0.7:
+                strong.append(topic)
+                if topic not in completed:
+                    completed.append(topic)
+            else:
+                weak.append(topic)
+                completed = [item for item in completed if item != topic]
+            conn.execute(
+                "UPDATE learning_profile SET weak_topics = ?, strong_topics = ?, completed_topics = ? "
+                "WHERE student_id = ?",
+                (json.dumps(weak), json.dumps(strong), json.dumps(completed), student_id),
+            )

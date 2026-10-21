@@ -1,179 +1,157 @@
-import streamlit as st
-import os
-from dotenv import load_dotenv
-from graph.workflow import build_workflow
-from memory.short_term import ShortTermMemory
-from memory.long_term_db import init_db, get_or_create_student, get_learner_profile, save_session
-from agents.feedback_agent import evaluate_quiz_results
+"""Streamlit interface for the Project 1 tutor and its approval checkpoint."""
+from uuid import uuid4
 
-load_dotenv()
-init_db()
+import streamlit as st
+from langgraph.types import Command
+
+from graph.workflow import build_workflow, request_state
+from memory.short_term import ShortTermMemory
+from memory.long_term_db import init_db, get_or_create_student, get_learner_profile, get_memory_records
 
 st.set_page_config(page_title="EduAgent — AI Tutor", page_icon="🎓", layout="wide")
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+init_db()
+for key, default in {"messages": [], "student_id": None, "thread_id": None,
+                     "current_quiz": None, "quiz_id": None, "pending_approval": None, "last_trace": []}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 if "memory" not in st.session_state:
-    st.session_state.memory = ShortTermMemory(max_messages=10)
+    st.session_state.memory = ShortTermMemory()
 if "workflow" not in st.session_state:
     st.session_state.workflow = build_workflow()
-if "student_id" not in st.session_state:
-    st.session_state.student_id = None
-if "quiz_active" not in st.session_state:
-    st.session_state.quiz_active = False
-if "current_quiz" not in st.session_state:
-    st.session_state.current_quiz = None
 
-# SIDEBAR
+
+def config():
+    return {"configurable": {"thread_id": st.session_state.thread_id}}
+
+
+def add_message(role, text):
+    st.session_state.messages.append({"role": role, "content": text})
+    st.session_state.memory.add_message(role, text)
+
+
+def new_thread(student_id):
+    st.session_state.student_id = student_id
+    st.session_state.thread_id = str(uuid4())
+    st.session_state.messages = []
+    st.session_state.memory.clear()
+    st.session_state.current_quiz = None
+    st.session_state.quiz_id = None
+    st.session_state.pending_approval = None
+    st.session_state.last_trace = []
+    for key in ("pending_message", "pending_preferences"):
+        st.session_state.pop(key, None)
+
+
+def run_request(message, changes=None, submission=None):
+    history = st.session_state.memory.get_context_string()
+    add_message("user", message)
+    try:
+        result = st.session_state.workflow.invoke(
+            request_state(st.session_state.student_id, message, history, changes, submission), config())
+    except Exception:
+        # Pending state can still be rejected if a later memory commit failed.
+        add_message("assistant", "This request could not finish. Check your API configuration or try a new thread.")
+        return
+    add_message("assistant", result["response"])
+    st.session_state.last_trace = result.get("steps", [])
+    if (result.get("quiz_data") or {}).get("questions"):
+        st.session_state.current_quiz = result["quiz_data"]
+        st.session_state.quiz_id = str(uuid4())
+    if submission:
+        st.session_state.current_quiz = None
+    st.session_state.quiz_id = None
+    st.session_state.pending_approval = (result["__interrupt__"][0].value
+                                         if result.get("__interrupt__") else None)
+
+
 with st.sidebar:
     st.title("🎓 EduAgent")
-    st.caption("Your Personalized AI Tutor")
-    st.divider()
-
-    st.subheader("👤 Student Setup")
-    student_name = st.text_input("Your Name", placeholder="Enter your name")
-
-    if st.button("Start Session", type="primary", use_container_width=True):
-        if student_name:
-            student_id = student_name.lower().replace(" ", "_")
-            get_or_create_student(student_id, student_name)
-            st.session_state.student_id = student_id
-            st.session_state.messages = []
-            st.session_state.memory.clear()
-            st.success(f"Welcome, {student_name}!")
-            st.rerun()
-
-    st.divider()
-
+    st.caption("Python Fundamentals tutor · Project 1")
+    student_name = st.text_input("Demo learner name", placeholder="Use a simulated learner")
+    if st.button("Start session", type="primary") and student_name.strip():
+        student_id = student_name.strip().lower().replace(" ", "_")
+        get_or_create_student(student_id, student_name.strip())
+        new_thread(student_id)
+        st.rerun()
     if st.session_state.student_id:
+        if st.button("New thread — keep approved memory"):
+            new_thread(st.session_state.student_id)
+            st.rerun()
+        st.caption(f"Thread: {st.session_state.thread_id}")
         profile = get_learner_profile(st.session_state.student_id)
+        st.write("Level:", profile["level"])
+        st.write("Format:", profile["preferred_style"])
+        st.write("Last topic:", profile.get("last_topic") or "None")
+        with st.expander("Approved memory records", expanded=True):
+            st.json(get_memory_records(st.session_state.student_id))
+        with st.form("learning_preferences"):
+            st.write("Learning preferences / corrections")
+            styles = ["simple", "bullet_points", "worked_examples"]
+            levels = ["beginner", "intermediate", "advanced"]
+            style = st.selectbox("Preferred format", styles, index=styles.index(profile["preferred_style"]))
+            level = st.selectbox("Level", levels, index=levels.index(profile["level"]))
+            if st.form_submit_button("Review memory changes", disabled=bool(st.session_state.pending_approval)):
+                st.session_state.pending_preferences = {"preferred_style": style, "level": level}
+                st.session_state.pending_message = "Update my learning preferences."
+        for prompt in ("Explain Python loops", "Quiz me on loops", "Show my progress"):
+            if st.button(prompt, disabled=bool(st.session_state.pending_approval)):
+                st.session_state.pending_message = prompt
+    st.caption("SQLite memory stays local. Prompts, relevant preferences and notes are sent to Groq. "
+               "Use authorized sample data. Learner names are simulated identities, not authentication.")
 
-        st.subheader("📊 Your Profile")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Level", profile.get("level", "Beginner").title())
-        with col2:
-            attempts = profile.get("recent_quiz_attempts", [])
-            avg_score = 0
-            if attempts:
-                scores = [a["score"]/a["total"]*100 for a in attempts if a.get("total")]
-                avg_score = round(sum(scores)/len(scores)) if scores else 0
-            st.metric("Avg Score", f"{avg_score}%")
-
-        if profile.get("weak_topics"):
-            st.subheader("⚠️ Needs Work")
-            for t in profile["weak_topics"][-3:]:
-                st.warning(f"• {t}", icon="📌")
-
-        if profile.get("strong_topics"):
-            st.subheader("✅ Strengths")
-            for t in profile["strong_topics"][-3:]:
-                st.success(f"• {t}", icon="⭐")
-
-        if profile.get("last_topic"):
-            st.info(f"📚 Last studied: **{profile['last_topic']}**")
-
-    st.divider()
-    st.subheader("💡 Quick Actions")
-    for action in ["Explain Python loops", "Explain recursion", "Quiz me on loops",
-                   "Explain data structures", "Show my progress"]:
-        if st.button(action, use_container_width=True, key=f"qa_{action}"):
-            st.session_state["pending_message"] = action
-
-    st.divider()
-    st.caption("🔒 Data stored locally | ⚡ Groq · Llama-3.3-70B")
-
-# MAIN AREA
 st.title("🎓 EduAgent — Personalized AI Tutor")
-
 if not st.session_state.student_id:
-    st.info("👈 Enter your name in the sidebar and click **Start Session** to begin!")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("**📖 Explain Concepts**\nRAG-grounded explanations from your notes")
-    with c2:
-        st.markdown("**📝 Generate Quizzes**\nPersonalized questions based on your weak areas")
-    with c3:
-        st.markdown("**📊 Track Progress**\nLong-term memory of your learning journey")
-else:
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    st.info("Enter a simulated learner name and start a session.")
+    st.stop()
 
-    # Quiz mode
-    if st.session_state.quiz_active and st.session_state.current_quiz:
-        quiz = st.session_state.current_quiz
-        questions = quiz.get("questions", [])
-        if questions:
-            st.subheader(f"📝 Quiz: {quiz.get('topic', 'General')}")
-            with st.form("quiz_form"):
-                answers = {}
-                for i, q in enumerate(questions):
-                    st.markdown(f"**Q{i+1}: {q['question']}**")
-                    answers[i] = st.radio(
-                        f"Q{i+1}",
-                        options=q.get("options", []),
-                        key=f"q_{i}",
-                        index=None,
-                        label_visibility="collapsed"
-                    )
-                if st.form_submit_button("Submit Answers", type="primary"):
-                    unanswered = [str(i + 1) for i in range(len(questions)) if answers[i] is None]
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-                    if unanswered:
-                        st.warning(f"Please answer all questions before submitting. Missing: {', '.join(unanswered)}")
-                    else:
-                        student_answers = [answers[i] for i in range(len(questions))]
-                        results = evaluate_quiz_results(
-                            st.session_state.student_id,
-                            quiz.get("topic", "general"),
-                            questions,
-                            student_answers
-                        )
-                        score_pct = results["percentage"]
-                        emoji = "🎉" if score_pct >= 70 else "💪"
-                        result_msg = f"{emoji} **Quiz Results: {results['score']}/{results['total']} ({score_pct}%)**\n\n"
-                        for fb in results["feedback_items"]:
-                            icon = "✅" if fb["correct"] else "❌"
-                            result_msg += f"{icon} {fb['feedback']}\n\n"
+if st.session_state.pending_approval:
+    st.subheader("Save this for later interactions?")
+    st.write("Review the proposed changes. Rejecting keeps the current answer and leaves reusable memory unchanged.")
+    st.json(st.session_state.pending_approval)
+    yes, no = st.columns(2)
+    decision = None
+    if yes.button("Approve memory update", type="primary"):
+        decision = True
+    if no.button("Reject memory update"):
+        decision = False
+    if decision is not None:
+        try:
+            result = st.session_state.workflow.invoke(Command(resume={"approved": decision}), config())
+        except Exception:
+            st.error("The decision could not finish. Try again or start a new thread.")
+        else:
+            st.session_state.pending_approval = None
+            st.session_state.last_trace = result["steps"]
+            add_message("assistant", "Memory saved." if result["memory_status"] == "saved"
+                        else "Memory update rejected. No learning record was changed.")
+            st.rerun()
+    st.stop()
 
-                        st.session_state.messages.append({"role": "assistant", "content": result_msg})
-                        st.session_state.memory.add_message("assistant", result_msg)
-                        st.session_state.quiz_active = False
-                        st.session_state.current_quiz = None
-                        st.rerun()
-
-    pending = st.session_state.pop("pending_message", None)
-    user_input = pending or st.chat_input("Ask me anything — explain a concept, request a quiz, or check your progress...")
-
-    if user_input:
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        st.session_state.memory.add_message("user", user_input)
-        with st.chat_message("user"):
-            st.markdown(user_input)
-
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                state = {
-                    "student_id": st.session_state.student_id,
-                    "message": user_input,
-                    "intent": "",
-                    "response": "",
-                    "quiz_data": None,
-                    "profile": get_learner_profile(st.session_state.student_id),
-                    "chat_history": st.session_state.memory.get_context_string(),
-                    "safe": True,
-                    "safety_message": ""
-                }
-                result = st.session_state.workflow.invoke(state)
-                response = result.get("response", "I encountered an issue. Please try again.")
-                quiz_data = result.get("quiz_data")
-                if quiz_data and quiz_data.get("questions"):
-                    st.session_state.quiz_active = True
-                    st.session_state.current_quiz = quiz_data
-                    save_session(st.session_state.student_id, quiz_data.get("topic", "quiz"),
-                                 f"Quiz generated on {quiz_data.get('topic')}")
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                st.session_state.memory.add_message("assistant", response)
+quiz = st.session_state.current_quiz
+if quiz and quiz.get("questions"):
+    with st.form("quiz_form"):
+        answers = [st.radio(question["question"], question["options"], index=None,
+                            key=f"{st.session_state.quiz_id}-q-{index}")
+                   for index, question in enumerate(quiz["questions"])]
+        if st.form_submit_button("Evaluate answers"):
+            if any(answer is None for answer in answers):
+                st.warning("Answer every question first.")
+            else:
+                run_request("Evaluate my practice quiz.", submission={"topic": quiz["topic"],
+                            "questions": quiz["questions"], "answers": answers})
                 st.rerun()
+
+with st.expander("Last workflow steps"):
+    st.write(" → ".join(st.session_state.last_trace))
+pending = st.session_state.pop("pending_message", None)
+user_input = st.chat_input("Ask for an explanation, practice quiz, or progress report")
+message = pending or user_input
+if message:
+    changes = st.session_state.pop("pending_preferences", None)
+    with st.spinner("Working..."):
+        run_request(message, changes=changes)
+    st.rerun()
